@@ -10,25 +10,27 @@ interface IExternalNFT is IERC721 {
     function ownerOf(uint256 tokenId) external view returns (address);
 }
 
-contract CryptoVitaeReviewSBT is ERC721, Ownable {
+contract CryptoVitaeReviewSBT is Ownable, ERC721 {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
     IExternalNFT public externalNFTContract;
 
-    enum Visibility { Private, Public }
+    enum Visibility {
+        Private,
+        Public
+    }
 
     struct Review {
         Visibility visibility;
         uint256 companyNFTId;
     }
 
-    // Mapeo para almacenar la tokenURI de cada token
     mapping(uint256 => string) private _tokenURIs;
     mapping(uint256 => Review) private _reviews;
     mapping(address => uint256[]) private _reviewsByEmployee;
 
-    constructor(address _externalNFTContract) 
+    constructor(address _externalNFTContract)
         ERC721("CryptoVitaeReviewSBT", "CVR")
         Ownable(msg.sender)
     {
@@ -36,7 +38,10 @@ contract CryptoVitaeReviewSBT is ERC721, Ownable {
     }
 
     modifier onlyNFTHolder(uint256 nftId) {
-        require(externalNFTContract.ownerOf(nftId) == msg.sender, "You must own the NFT from the external contract");
+        require(
+            externalNFTContract.ownerOf(nftId) == msg.sender,
+            "You must own the NFT from the external contract"
+        );
         _;
     }
 
@@ -68,27 +73,37 @@ contract CryptoVitaeReviewSBT is ERC721, Ownable {
     }
 
     function approveSBT(uint256 tokenId) public onlyHolder(tokenId) {
-        require(_reviews[tokenId].visibility == Visibility.Private, "SBT is already public");
+        require(
+            _reviews[tokenId].visibility == Visibility.Private,
+            "SBT is already public"
+        );
 
-        // Cambiar el estado a público
         _reviews[tokenId].visibility = Visibility.Public;
     }
 
-    function getReview(uint256 tokenId) public view returns (
-        string memory tokenURI,
-        Visibility visibility,
-        uint256 companyNFTId
-    ) {
+    function getReview(uint256 tokenId)
+        public
+        view
+        returns (
+            string memory tokenURI,
+            Visibility visibility,
+            uint256 companyNFTId
+        )
+    {
         Review memory review = _reviews[tokenId];
-        require(review.visibility == Visibility.Public || ownerOf(tokenId) == msg.sender, "This SBT is private");
-        return (
-            _tokenURIs[tokenId],
-            review.visibility,
-            review.companyNFTId
+        require(
+            review.visibility == Visibility.Public ||
+                ownerOf(tokenId) == msg.sender,
+            "This SBT is private"
         );
+        return (_tokenURIs[tokenId], review.visibility, review.companyNFTId);
     }
 
-    function getReviewsByEmployee(address employee) public view returns (uint256[] memory) {
+    function getReviewsByEmployee(address employee)
+        public
+        view
+        returns (uint256[] memory)
+    {
         return _reviewsByEmployee[employee];
     }
 
@@ -96,21 +111,26 @@ contract CryptoVitaeReviewSBT is ERC721, Ownable {
         _tokenURIs[tokenId] = tokenURI;
     }
 
-    function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        virtual
+        override
+        returns (string memory)
+    {
         return _tokenURIs[tokenId];
     }
 
-    // // Bloquear transferencia en `transferFrom`
-    // function transferFrom(address from, address to, uint256 tokenId) public override {
-    //     revert("This SBT is non-transferable");
-    // }
+    function _update(
+        address to,
+        uint256 tokenId,
+        address auth
+    ) internal override(ERC721) returns (address) {
+        address from = _ownerOf(tokenId);
+        if (from != address(0) && to != address(0)) {
+            revert("Soulbound: Transfer failed");
+        }
 
-    // // Bloquear transferencia en `safeTransferFrom`
-    // function safeTransferFrom(address from, address to, uint256 tokenId) public override {
-    //     revert("This SBT is non-transferable");
-    // }
-
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public override {
-        revert("This SBT is non-transferable");
+        return super._update(to, tokenId, auth);
     }
 }
