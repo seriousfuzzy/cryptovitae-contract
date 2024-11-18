@@ -8,7 +8,6 @@ contract CryptoVitaeCompanyNFT is ERC721, Ownable {
     uint256 public tokenCounter;
 
     mapping(uint256 => string) private _tokenURIs;
-    mapping(address => uint256[]) private _ownedTokens;
 
     constructor() ERC721("CryptoVitaeCompanyNFT", "CVC") Ownable(msg.sender) {
         tokenCounter = 0;
@@ -29,7 +28,6 @@ contract CryptoVitaeCompanyNFT is ERC721, Ownable {
 
     function createNFT(string memory _tokenURI)
         public
-        onlyOwner
         returns (uint256)
     {
         require(bytes(_tokenURI).length > 0, "Token URI is required");
@@ -37,7 +35,6 @@ contract CryptoVitaeCompanyNFT is ERC721, Ownable {
         uint256 tokenId = tokenCounter;
 
         _safeMint(msg.sender, tokenId);
-        _ownedTokens[msg.sender].push(tokenId);
         _setTokenURI(tokenId, _tokenURI);
         tokenCounter++;
         return tokenId;
@@ -45,9 +42,5 @@ contract CryptoVitaeCompanyNFT is ERC721, Ownable {
 
     function _setTokenURI(uint256 tokenId, string memory _tokenURI) internal {
         _tokenURIs[tokenId] = _tokenURI;
-    }
-
-    function tokensOfOwner() external view returns (uint256[] memory) {
-        return _ownedTokens[msg.sender];
     }
 }
