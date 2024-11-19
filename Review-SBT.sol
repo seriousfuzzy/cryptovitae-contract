@@ -29,6 +29,7 @@ contract CryptoVitaeReviewSBT is Ownable, ERC721 {
     mapping(uint256 => string) private _tokenURIs;
     mapping(uint256 => Review) private _reviews;
     mapping(address => uint256[]) private _reviewsByEmployee;
+    mapping(address => uint256[]) private _reviewsByCompany;
 
     constructor(address _externalNFTContract)
         ERC721("CryptoVitaeReviewSBT", "CVR")
@@ -56,20 +57,21 @@ contract CryptoVitaeReviewSBT is Ownable, ERC721 {
         uint256 companyNFTId
     ) public onlyNFTHolder(companyNFTId) returns (uint256) {
         _tokenIds.increment();
-        uint256 newTokenId = _tokenIds.current();
+        uint256 tokenId = _tokenIds.current();
 
-        _mint(employee, newTokenId);
+        _mint(employee, tokenId);
 
-        _reviews[newTokenId] = Review({
+        _reviews[tokenId] = Review({
             visibility: Visibility.Private,
             companyNFTId: companyNFTId
         });
 
-        _reviewsByEmployee[employee].push(newTokenId);
+        _reviewsByEmployee[employee].push(tokenId);
+        _reviewsByCompany[msg.sender].push(tokenId);
 
-        _setTokenURI(newTokenId, tokenURI);
+        _setTokenURI(tokenId, tokenURI);
 
-        return newTokenId;
+        return tokenId;
     }
 
     function approveSBT(uint256 tokenId) public onlyHolder(tokenId) {
@@ -107,6 +109,14 @@ contract CryptoVitaeReviewSBT is Ownable, ERC721 {
         return _reviewsByEmployee[employee];
     }
 
+    function getReviewsByCompany(address company)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        return _reviewsByCompany[company];
+    }
+
     function _setTokenURI(uint256 tokenId, string memory tokenURI) internal {
         _tokenURIs[tokenId] = tokenURI;
     }
@@ -127,7 +137,7 @@ contract CryptoVitaeReviewSBT is Ownable, ERC721 {
         address auth
     ) internal override(ERC721) returns (address) {
         address from = _ownerOf(tokenId);
-        if (from != address(0) && to != address(0)) {
+        if (from != address(0) && (to != address(0))) {
             revert("Soulbound: Transfer failed");
         }
 
